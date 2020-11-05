@@ -17,6 +17,9 @@ class LCU(QRunnable):
 
         self.signals = WorkerSignals()
 
+        self.summoners = {}
+        self.lobby = {}
+
         self.summonersLock = threading.RLock()
 
         self.connector = Connector()
@@ -42,18 +45,83 @@ class LCU(QRunnable):
         print(str(event.data))
         if event.data == "ChampSelect":
             self.summoners = {}
-            self.signals.result.emit((Messages.ENTERED_CHAMPSELECT,))
+            self.myTeamBans = []
+            self.theirTeamBans = []
+            self.signals.result.emit((Messages.CHAMPSELECT_ENTERED,))
+
+        elif event.data == 'Matchmaking':
+            if self.summoners is not {}:
+                ourTeam = []
+                theirTeam = []
+
+                for k, s in self.summoners.items():
+                    if s.champId == 0:
+                        continue
+
+                    if s.ourTeam:
+                        ourTeam.append(s.champId)
+                    else:
+                        theirTeam.append(s.champId)
+
+                self.summoners = {}
+
+                self.signals.result.emit(
+                    (Messages.SAVE_LOBBY, (ourTeam, theirTeam, self.myTeamBans, self.theirTeamBans)))
+
+        elif event.data == "GameStart":
+            ourTeam = []
+            theirTeam = []
+
+            for k, s in self.summoners.items():
+                if s.champId == 0:
+                    continue
+
+                if s.ourTeam:
+                    ourTeam.append(s.champId)
+                else:
+                    theirTeam.append(s.champId)
+
+                self.summoners = {}
+
+            self.signals.result.emit(
+                (Messages.SAVE_LOBBY, (ourTeam, theirTeam, self.myTeamBans, self.theirTeamBans)))
+            self.signals.result.emit((Messages.GAME_ENTERED,))
+
         elif event.data == "None":
-            self.signals.result.emit((Messages.QUIT_CHAMPSELECT,))
+            if self.summoners is not {}:
+                ourTeam = []
+                theirTeam = []
+
+                for k, s in self.summoners.items():
+                    if s.champId == 0:
+                        continue
+
+                    if s.ourTeam:
+                        ourTeam.append(s.champId)
+                    else:
+                        theirTeam.append(s.champId)
+
+                self.summoners = {}
+
+                self.signals.result.emit(
+                    (Messages.SAVE_LOBBY, (ourTeam, theirTeam, self.myTeamBans, self.theirTeamBans)))
+
+            # self.signals.result.emit((Messages.CHAMPSELECT_QUIT,))
 
     async def champSelect(self, connection, event):
         myTeam = event.data['myTeam']
         theirTeam = event.data['theirTeam']
 
+        bans = event.data['bans']
+        self.myTeamBans = bans['myTeamBans']
+        self.theirTeamBans = bans['theirTeamBans']
+
         champId = 0
 
+        # bans': {'myTeamBans': [523, 63], 'numBans': 6, 'theirTeamBans': [82, 147]},
+
         with self.summonersLock:
-            for i, c in enumerate(myTeam + theirTeam):
+            for i, c in enumerate(myTeam):
                 if c['championPickIntent'] == 0:
                     champId = c['championId']
                 else:
@@ -62,8 +130,25 @@ class LCU(QRunnable):
                 summonerId = c['summonerId']
 
                 if summonerId not in self.summoners:
-                    self.summoners[summonerId] = Summoner(i, connection,
+                    self.summoners[summonerId] = Summoner(i, True, connection,
                                                           summonerId, self.signals.result)
 
-                elif self.summoners[summonerId].champId != champId:
-                    self.summoners[summonerId].setChamp(champId)
+                else:
+                    if self.summoners[summonerId].champId != champId:
+                        self.summoners[summonerId].setChamp(champId)
+
+            for i, c in enumerate(theirTeam):
+                if c['championPickIntent'] == 0:
+                    champId = c['championId']
+                else:
+                    champId = c['championPickIntent']
+
+                summonerId = c['summonerId']
+
+                if summonerId not in self.summoners:
+                    self.summoners[summonerId] = Summoner(i, False, connection,
+                                                          summonerId, self.signals.result)
+
+                else:
+                    if self.summoners[summonerId].champId != champId:
+                        self.summoners[summonerId].setChamp(champId)

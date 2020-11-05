@@ -3,34 +3,7 @@ from messages import Messages
 import threading
 import asyncio
 
-import pathlib
-import os
-
-import cassiopeia as cass
-from dotenv import load_dotenv
-
-
-load_dotenv(verbose=True)
-cwd = pathlib.Path(os.getcwd())
-
-settings = cass.get_default_config()
-settings['pipeline'] = {
-    'Cache': {},
-    'SimpleKVDiskStore': {
-        "package": "cassiopeia_diskstore",
-        "path": str(cwd / 'cass_tmp')
-    },
-    'DDragon': {},
-    'RiotAPI': {
-        'api_key': os.getenv('RIOT_API_KEY')
-    }
-}
-
-cass.apply_settings(settings)
-cass.set_default_region('EUNE')
-
-# cache champs
-champions = cass.get_champions()
+from cass import *
 
 
 TIER_SHORT = {
@@ -54,23 +27,31 @@ DIVISION_SHORT = {
 
 
 class Summoner:
-    def __init__(self, lobbyPos, connection, summonerId, resultSignal):
+    def __init__(self, lobbyPos, ourTeam, connection, summonerId, resultSignal):
+        self.ourTeam = ourTeam
         self.lobbyPos = lobbyPos
         self.id = summonerId
         self.connection = connection
         self.resultSignal = resultSignal
+
         self.name = ''
+
         self.champId = 0
-        self.champName = 'Not selected'
+        self.champName = 'X'
         self.champImage = None
-        self.soloqRank = ''
-        self.flexRank = ''
+
+        self.rank = ''
 
         asyncio.create_task(self.fetchSummoner())
 
     def setChamp(self, champId):
         self.champId = champId
-        self.fetchChampName()
+        if champId == 0:
+            self.champName = 'X'
+        else:
+            champ = cass.Champion(id=champId)
+            self.champImage = champ.image.image
+            self.champName = champ.name
 
         self.resultSignal.emit((Messages.CHAMPSELECT_UPDATED, self))
 
@@ -79,7 +60,6 @@ class Summoner:
 
         if summoner.status == 200:
             json = await summoner.json()
-            print(json)
             self.name = json['displayName']
             self.puuid = json['puuid']
 
@@ -91,11 +71,3 @@ class Summoner:
                 TIER_SHORT[soloq.tier], DIVISION_SHORT[soloq.division], TIER_SHORT[flex.tier], DIVISION_SHORT[flex.division])
 
             self.resultSignal.emit((Messages.CHAMPSELECT_UPDATED, self))
-
-    def fetchChampName(self):
-        if self.champId == 0:
-            self.champName = 'Not selected'
-        else:
-            champ = cass.Champion(id=self.champId)
-            self.champImage = champ.image.image
-            self.champName = champ.name

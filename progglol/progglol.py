@@ -11,6 +11,9 @@ import lcu_driver
 import os
 import asyncio
 
+import datetime
+from cass import *
+
 
 from lcu import LCU
 
@@ -55,8 +58,10 @@ class TeamModel(QAbstractTableModel):
             if index.column() == 0:
                 if summoner.champImage is not None:
                     qim = ImageQt(summoner.champImage)
+                    qim = qim.scaled(self.parent.columnWidth(
+                        index.column()), self.parent.rowHeight(index.row()), Qt.KeepAspectRatio)
                     pix = QPixmap.fromImage(qim)
-                    return pix.scaled(self.parent.columnWidth(index.column()), self.parent.rowHeight(index.row()), Qt.KeepAspectRatio)
+                    return pix
         elif role == Qt.TextAlignmentRole:
             return Qt.AlignVCenter + Qt.AlignHCenter
 
@@ -67,6 +72,77 @@ class TeamModel(QAbstractTableModel):
             return header[section]
 
 
+class LobbyView(QWidget):
+
+    def __init__(self, lobby):
+        super().__init__()
+
+        self.lobby = lobby
+
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Minimum)
+        self.setMinimumWidth(440)
+
+    def paintEvent(self, e):
+        painter = QPainter()
+        painter.begin(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        painter.setPen(QPen(Qt.red, 3))
+
+        i = 0
+
+        for c in self.lobby[0]:
+
+            qim = ImageQt(cass.Champion(id=c).image.image)
+            qim = qim.scaled(40, 40, Qt.KeepAspectRatio)
+
+            painter.drawImage(QPoint(qim.width() * i, 0), qim)
+
+            i += 1
+
+        i = 0
+
+        for c in self.lobby[2]:
+            qim = ImageQt(cass.Champion(id=c).image.image)
+            qim = qim.scaled(40, 40, Qt.KeepAspectRatio)
+            painter.drawImage(
+                QPoint(qim.width() * i, qim.height()), qim)
+
+            painter.drawLine(qim.width() * i, qim.height(),
+                             qim.width() * (i + 1), qim.height() * 2)
+            painter.drawLine(qim.width() * (i + 1), qim.height(),
+                             qim.width() * i, qim.height() * 2)
+
+            i += 1
+
+        i += 1
+        savedI = i
+        for c in self.lobby[1]:
+
+            qim = ImageQt(cass.Champion(id=c).image.image)
+            qim = qim.scaled(40, 40, Qt.KeepAspectRatio)
+
+            painter.drawImage(QPoint(qim.width() * i, 0), qim)
+
+            i += 1
+
+        i = savedI
+        for c in self.lobby[3]:
+            qim = ImageQt(cass.Champion(id=c).image.image)
+            qim = qim.scaled(40, 40, Qt.KeepAspectRatio)
+            painter.drawImage(
+                QPoint(qim.width() * i, qim.height()), qim)
+
+            painter.drawLine(qim.width() * i, qim.height(),
+                             qim.width() * (i + 1), qim.height() * 2)
+            painter.drawLine(qim.width() * (i + 1), qim.height(),
+                             qim.width() * i, qim.height() * 2)
+
+            i += 1
+
+        painter.end()
+
+
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def __init__(self):
@@ -74,17 +150,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
 
+        # tmp
         self.stackedWidget.setCurrentIndex(1)
 
-        self.model = TeamModel(self.ourTeamTable)
-        self.ourTeamTable.setModel(self.model)
+        self.ourTeamTableModel = TeamModel(self.ourTeamTable)
+        self.ourTeamTable.setModel(self.ourTeamTableModel)
         self.ourTeamTable.verticalHeader().setVisible(False)
         self.ourTeamTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        self.theirTeamTableModel = TeamModel(self.theirTeamTable)
+        self.theirTeamTable.setModel(self.theirTeamTableModel)
+        self.theirTeamTable.verticalHeader().setVisible(False)
+        self.theirTeamTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
         self.threadpool = QThreadPool()
 
         self.lcu = LCU()
         self.lcu.signals.result.connect(self.handle_msg)
         self.threadpool.start(self.lcu)
+
+        self.lobbies = []
 
     def handle_msg(self, msg):
         print(msg)
@@ -95,14 +180,33 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.waitingLabel.setText('Waiting for champion select')
         elif msgType == Messages.LCU_DISCONNECTED:
             self.waitingLabel.setText('Waiting for league client')
-        elif msgType == Messages.ENTERED_CHAMPSELECT:
+        elif msgType == Messages.CHAMPSELECT_ENTERED:
             self.stackedWidget.setCurrentIndex(1)
-        elif msgType == Messages.QUIT_CHAMPSELECT:
+        elif msgType == Messages.CHAMPSELECT_QUIT:
             self.stackedWidget.setCurrentIndex(0)
         elif msgType == Messages.CHAMPSELECT_UPDATED:
             summ = msg[1]
-            self.model.setData(summ.lobbyPos, summ)
-            self.model.layoutChanged.emit()
+            if summ.ourTeam:
+                self.ourTeamTableModel.setData(summ.lobbyPos, summ)
+                self.ourTeamTableModel.layoutChanged.emit()
+            else:
+                self.theirTeamTableModel.setData(summ.lobbyPos, summ)
+                self.theirTeamTableModel.layoutChanged.emit()
+        elif msgType == Messages.SAVE_LOBBY:
+            lobby = msg[1]
+
+            y = self.previousLobbiesGrid.layout().columnCount()
+
+            label = QLabel(datetime.datetime.now().strftime('%H:%M:%S'))
+            label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+            label.setAlignment(Qt.AlignHCenter)
+            drawingView = LobbyView(lobby)
+
+            self.previousLobbiesGrid.layout().addWidget(
+                label, 0, y)
+            self.previousLobbiesGrid.layout().addWidget(drawingView, 1, y)
+
+            self.lobbies.insert(0, lobby)
 
 
 if __name__ == '__main__':
