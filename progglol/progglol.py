@@ -57,6 +57,8 @@ class TeamModel(QAbstractTableModel):
                     qim = ImageQt(summoner.champImage)
                     pix = QPixmap.fromImage(qim)
                     return pix.scaled(self.parent.columnWidth(index.column()), self.parent.rowHeight(index.row()), Qt.KeepAspectRatio)
+        elif role == Qt.TextAlignmentRole:
+            return Qt.AlignVCenter + Qt.AlignHCenter
 
     def headerData(self, section, orientation, role):
         header = ['Champion', 'Nick', 'Rank', '', '']
@@ -106,7 +108,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 app = QtWidgets.QApplication(sys.argv)
 window = MainWindow()
 window.show()
-app.exec_()
+sys.exit(app.exec_())
 
 
 """ 
