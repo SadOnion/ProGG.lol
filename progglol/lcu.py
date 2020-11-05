@@ -12,7 +12,6 @@ class WorkerSignals(QObject):
 
 
 class LCU(QRunnable):
-
     def __init__(self):
         super(LCU, self).__init__()
 

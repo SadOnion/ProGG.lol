@@ -82,9 +82,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.ourTeamTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.threadpool = QThreadPool()
 
-        worker = LCU()
-        worker.signals.result.connect(self.handle_msg)
-        self.threadpool.start(worker)
+        self.lcu = LCU()
+        self.lcu.signals.result.connect(self.handle_msg)
+        self.threadpool.start(self.lcu)
 
     def handle_msg(self, msg):
         print(msg)
@@ -105,10 +105,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.model.layoutChanged.emit()
 
 
-app = QtWidgets.QApplication(sys.argv)
-window = MainWindow()
-window.show()
-sys.exit(app.exec_())
+if __name__ == '__main__':
+    app = QtWidgets.QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
 
 
 """ 
