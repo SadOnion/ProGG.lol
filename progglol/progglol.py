@@ -1,86 +1,118 @@
 from PyQt5 import QtWidgets, uic
+
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+
+from PIL.ImageQt import ImageQt
+
 import sys
-from lcu_driver import Connector
+import lcu_driver
 import os
+import asyncio
 
-import cassiopeia as cass
 
-from dotenv import load_dotenv
-load_dotenv(verbose=True)
+from lcu import LCU
 
-cass.set_riot_api_key(os.getenv('RIOT_API_KEY'))
-cass.set_default_region('EUNE')
+from messages import Messages
 
-connector = Connector()
 
+qt_creator_file = "mainwindow.ui"
+Ui_MainWindow, QtBaseClass = uic.loadUiType(qt_creator_file)
+
+
+class TeamModel(QAbstractTableModel):
+    def __init__(self, parent=None):
+        QAbstractTableModel.__init__(self, parent)
+        self.parent = parent
+        self.summoners = []
+
+    def rowCount(self, parent):
+        return len(self.summoners)
+
+    def columnCount(self, parent):
+        return 5
+
+    def setData(self, i, summoner):
+        if len(self.summoners) == i:
+            self.summoners.append(summoner)
+        else:
+            self.summoners[i] = summoner
+
+    def data(self, index, role):
+        summoner = self.summoners[index.row()]
+        if role == Qt.DisplayRole:
+            if index.column() == 0:
+                if summoner.champImage is None:
+                    return QVariant(summoner.champName)
+            elif index.column() == 1:
+                return QVariant(summoner.name)
+            elif index.column() == 2:
+                return QVariant(summoner.rank)
+            else:
+                return QVariant('')
+        elif role == Qt.DecorationRole:
+            if index.column() == 0:
+                if summoner.champImage is not None:
+                    qim = ImageQt(summoner.champImage)
+                    pix = QPixmap.fromImage(qim)
+                    return pix.scaled(self.parent.columnWidth(index.column()), self.parent.rowHeight(index.row()), Qt.KeepAspectRatio)
+
+    def headerData(self, section, orientation, role):
+        header = ['Champion', 'Nick', 'Rank', '', '']
+
+        if role == Qt.DisplayRole:
+            return header[section]
+
+
+class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+
+    def __init__(self):
+        QtWidgets.QMainWindow.__init__(self)
+        Ui_MainWindow.__init__(self)
+        self.setupUi(self)
+
+        self.stackedWidget.setCurrentIndex(1)
+
+        self.model = TeamModel(self.ourTeamTable)
+        self.ourTeamTable.setModel(self.model)
+        self.ourTeamTable.verticalHeader().setVisible(False)
+        self.ourTeamTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.threadpool = QThreadPool()
+
+        worker = LCU()
+        worker.signals.result.connect(self.handle_msg)
+        self.threadpool.start(worker)
+
+    def handle_msg(self, msg):
+        print(msg)
+
+        msgType = msg[0]
+
+        if msgType == Messages.LCU_CONNECTED:
+            self.waitingLabel.setText('Waiting for champion select')
+        elif msgType == Messages.LCU_DISCONNECTED:
+            self.waitingLabel.setText('Waiting for league client')
+        elif msgType == Messages.ENTERED_CHAMPSELECT:
+            self.stackedWidget.setCurrentIndex(1)
+        elif msgType == Messages.QUIT_CHAMPSELECT:
+            self.stackedWidget.setCurrentIndex(0)
+        elif msgType == Messages.CHAMPSELECT_UPDATED:
+            summ = msg[1]
+            self.model.setData(summ.lobbyPos, summ)
+            self.model.layoutChanged.emit()
+
+
+app = QtWidgets.QApplication(sys.argv)
+window = MainWindow()
+window.show()
+app.exec_()
+
+
+""" 
 champions = cass.get_champions()
 
 
 summoner = cass.Summoner(name="rdκ")
 print(summoner)
-
-
-def getChampionName(id):
-    c = cass.Champion(id=id)
-    return c.name
-
-
-async def getSummonerName(connection, id):
-    summoner = await connection.request('get', '/lol-summoner/v1/summoners/{}'.format(id))
-
-    if summoner.status != 200:
-        print('couldnt find')
-        return 'NOT FOUND'
-    else:
-        json = await summoner.json()
-        return json['displayName']
-
-
-@connector.ws.register('/lol-champ-select/v1/session', event_types=('UPDATE',))
-async def displayLobby(connection, event):
-    myTeam = event.data['myTeam']
-    theirTeam = event.data['theirTeam']
-
-    os.system('cls')
-
-    print('my team')
-    for c in myTeam:
-        champName = 'not found'
-
-        if c['championPickIntent'] == 0:
-            champName = getChampionName(c['championId'])
-        else:
-            champName = getChampionName(c['championPickIntent'])
-
-        print('summ name: {} champ name: {}'.format(
-            await getSummonerName(connection, c['summonerId']), champName))
-
-    print('their team')
-    for c in theirTeam:
-        champName = 'not found'
-
-        if c['championPickIntent'] == 0:
-            champName = getChampionName(c['championId'])
-        else:
-            champName = getChampionName(c['championPickIntent'])
-
-        print('summ name: {} champ name: {}'.format(
-            await getSummonerName(connection, c['summonerId']), champName))
-
-
-@connector.ready
-async def connect(connection):
-    print('LCU API is ready to be used.')
-
-
-@connector.ws.register('/lol-gameflow/v1/gameflow-phase', event_types=('UPDATE',))
-async def gameflow(connection, event):
-    print(str(event.data))
-
-
-@connector.close
-async def disconnect(_):
-    print('The client have been closed!')
-
-# starts the connector
-# connector.start()
+"""
