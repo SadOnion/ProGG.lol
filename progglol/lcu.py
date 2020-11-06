@@ -18,7 +18,7 @@ class LCU(QRunnable):
         self.signals = WorkerSignals()
 
         self.summoners = {}
-        self.lobby = {}
+        self.beenInChampSelect = False
 
         self.summonersLock = threading.RLock()
 
@@ -50,7 +50,7 @@ class LCU(QRunnable):
             self.signals.result.emit((Messages.CHAMPSELECT_ENTERED,))
 
         elif event.data == 'Matchmaking':
-            if self.summoners is not {}:
+            if self.beenInChampSelect:
                 ourTeam = []
                 theirTeam = []
 
@@ -63,8 +63,7 @@ class LCU(QRunnable):
                     else:
                         theirTeam.append(s.champId)
 
-                self.summoners = {}
-
+                self.beenInChampSelect = False
                 self.signals.result.emit(
                     (Messages.SAVE_LOBBY, (ourTeam, theirTeam, self.myTeamBans, self.theirTeamBans)))
 
@@ -81,14 +80,13 @@ class LCU(QRunnable):
                 else:
                     theirTeam.append(s.champId)
 
-                self.summoners = {}
-
             self.signals.result.emit(
                 (Messages.SAVE_LOBBY, (ourTeam, theirTeam, self.myTeamBans, self.theirTeamBans)))
+            self.beenInChampSelect = False
             self.signals.result.emit((Messages.GAME_ENTERED,))
 
         elif event.data == "None":
-            if self.summoners is not {}:
+            if self.beenInChampSelect:
                 ourTeam = []
                 theirTeam = []
 
@@ -101,10 +99,10 @@ class LCU(QRunnable):
                     else:
                         theirTeam.append(s.champId)
 
-                self.summoners = {}
-
                 self.signals.result.emit(
                     (Messages.SAVE_LOBBY, (ourTeam, theirTeam, self.myTeamBans, self.theirTeamBans)))
+
+                self.beenInChampSelect = False
 
             # self.signals.result.emit((Messages.CHAMPSELECT_QUIT,))
 
@@ -112,15 +110,21 @@ class LCU(QRunnable):
         myTeam = event.data['myTeam']
         theirTeam = event.data['theirTeam']
 
+        print(event.data)
+
         bans = event.data['bans']
-        self.myTeamBans = bans['myTeamBans']
-        self.theirTeamBans = bans['theirTeamBans']
 
         champId = 0
 
         # bans': {'myTeamBans': [523, 63], 'numBans': 6, 'theirTeamBans': [82, 147]},
 
         with self.summonersLock:
+            if not self.beenInChampSelect:
+                self.beenInChampSelect = True
+
+            self.myTeamBans = bans['myTeamBans']
+            self.theirTeamBans = bans['theirTeamBans']
+
             for i, c in enumerate(myTeam):
                 if c['championPickIntent'] == 0:
                     champId = c['championId']
@@ -138,16 +142,17 @@ class LCU(QRunnable):
                         self.summoners[summonerId].setChamp(champId)
 
             for i, c in enumerate(theirTeam):
+                print(c)
                 if c['championPickIntent'] == 0:
                     champId = c['championId']
                 else:
                     champId = c['championPickIntent']
 
-                summonerId = c['summonerId']
+                summonerId = c['cellId']
 
                 if summonerId not in self.summoners:
                     self.summoners[summonerId] = Summoner(i, False, connection,
-                                                          summonerId, self.signals.result)
+                                                          c['summonerId'], self.signals.result)
 
                 else:
                     if self.summoners[summonerId].champId != champId:

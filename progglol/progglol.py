@@ -28,7 +28,7 @@ class TeamModel(QAbstractTableModel):
     def __init__(self, parent=None):
         QAbstractTableModel.__init__(self, parent)
         self.parent = parent
-        self.summoners = []
+        self.summoners = [None] * 5
 
     def rowCount(self, parent):
         return len(self.summoners)
@@ -37,33 +37,32 @@ class TeamModel(QAbstractTableModel):
         return 5
 
     def setData(self, i, summoner):
-        if len(self.summoners) == i:
-            self.summoners.append(summoner)
-        else:
-            self.summoners[i] = summoner
+        self.summoners[i] = summoner
 
     def data(self, index, role):
         summoner = self.summoners[index.row()]
-        if role == Qt.DisplayRole:
-            if index.column() == 0:
-                if summoner.champImage is None:
-                    return QVariant(summoner.champName)
-            elif index.column() == 1:
-                return QVariant(summoner.name)
-            elif index.column() == 2:
-                return QVariant(summoner.rank)
-            else:
-                return QVariant('')
-        elif role == Qt.DecorationRole:
-            if index.column() == 0:
-                if summoner.champImage is not None:
-                    qim = ImageQt(summoner.champImage)
-                    qim = qim.scaled(self.parent.columnWidth(
-                        index.column()), self.parent.rowHeight(index.row()), Qt.KeepAspectRatio)
-                    pix = QPixmap.fromImage(qim)
-                    return pix
-        elif role == Qt.TextAlignmentRole:
-            return Qt.AlignVCenter + Qt.AlignHCenter
+
+        if summoner:
+            if role == Qt.DisplayRole:
+                if index.column() == 0:
+                    if summoner.champImage is None:
+                        return QVariant(summoner.champName)
+                elif index.column() == 1:
+                    return QVariant(summoner.name)
+                elif index.column() == 2:
+                    return QVariant(summoner.rank)
+                else:
+                    return QVariant('')
+            elif role == Qt.DecorationRole:
+                if index.column() == 0:
+                    if summoner.champImage is not None:
+                        qim = ImageQt(summoner.champImage)
+                        qim = qim.scaled(self.parent.columnWidth(
+                            index.column()), self.parent.rowHeight(index.row()), Qt.KeepAspectRatio)
+                        pix = QPixmap.fromImage(qim)
+                        return pix
+            elif role == Qt.TextAlignmentRole:
+                return Qt.AlignVCenter + Qt.AlignHCenter
 
     def headerData(self, section, orientation, role):
         header = ['Champion', 'Nick', 'Rank', '', '']
@@ -115,8 +114,9 @@ class LobbyView(QWidget):
 
             i += 1
 
-        i += 1
-        savedI = i
+        theirTeamOffset = max(len(self.lobby[0]), len(self.lobby[1])) + 1
+
+        i = theirTeamOffset
         for c in self.lobby[1]:
 
             qim = ImageQt(cass.Champion(id=c).image.image)
@@ -126,7 +126,7 @@ class LobbyView(QWidget):
 
             i += 1
 
-        i = savedI
+        i = theirTeamOffset
         for c in self.lobby[3]:
             qim = ImageQt(cass.Champion(id=c).image.image)
             qim = qim.scaled(40, 40, Qt.KeepAspectRatio)

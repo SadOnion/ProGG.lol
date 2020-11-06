@@ -42,7 +42,8 @@ class Summoner:
 
         self.rank = ''
 
-        asyncio.create_task(self.fetchSummoner())
+        if self.id != 0:
+            asyncio.create_task(self.fetchSummoner())
 
     def setChamp(self, champId):
         self.champId = champId
