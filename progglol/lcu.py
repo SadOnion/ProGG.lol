@@ -3,8 +3,10 @@ from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, QRunnable
 import threading
 
 from lcu_driver import Connector
-from summoner import Summoner
 from messages import Messages
+from championSelect import ChampionSelect
+from player import Player
+import itertools
 
 
 class WorkerSignals(QObject):
@@ -17,7 +19,6 @@ class LCU(QRunnable):
 
         self.signals = WorkerSignals()
 
-        self.summoners = {}
         self.beenInChampSelect = False
 
         self.summonersLock = threading.RLock()
@@ -26,10 +27,10 @@ class LCU(QRunnable):
         self.connector.open(self.lcu_ready)
         self.connector.close(self.lcu_close)
         self.connector.ws.register(
-            '/lol-gameflow/v1/gameflow-phase', event_types=('UPDATE',))(self.gameflow)
+            '/lol-gameflow/v1/gameflow-phase', event_types=('UPDATE',))(self.gameflowChanged)
 
         self.connector.ws.register(
-            '/lol-champ-select/v1/session', event_types=('UPDATE',))(self.champSelect)
+            '/lol-champ-select/v1/session', event_types=('UPDATE',))(self.championSelectChanged)
 
     @pyqtSlot()
     def run(self):
@@ -41,119 +42,74 @@ class LCU(QRunnable):
     async def lcu_close(self, _):
         self.signals.result.emit((Messages.LCU_DISCONNECTED,))
 
-    async def gameflow(self, connection, event):
+    async def gameflowChanged(self, connection, event):
         print(str(event.data))
+
         if event.data == "ChampSelect":
-            self.summoners = {}
-            self.myTeamBans = []
-            self.theirTeamBans = []
             self.signals.result.emit((Messages.CHAMPSELECT_ENTERED,))
-
-        elif event.data == 'Matchmaking':
+        else:
             if self.beenInChampSelect:
-                ourTeam = []
-                theirTeam = []
-
-                for k, s in self.summoners.items():
-                    if s.champId == 0:
-                        continue
-
-                    if s.ourTeam:
-                        ourTeam.append(s.champId)
-                    else:
-                        theirTeam.append(s.champId)
-
                 self.beenInChampSelect = False
                 self.signals.result.emit(
-                    (Messages.SAVE_LOBBY, (ourTeam, theirTeam, self.myTeamBans, self.theirTeamBans)))
+                    (Messages.CHAMPSELECT_SAVE, self.championSelect))
 
-        elif event.data == "GameStart":
-            ourTeam = []
-            theirTeam = []
-
-            for k, s in self.summoners.items():
-                if s.champId == 0:
-                    continue
-
-                if s.ourTeam:
-                    ourTeam.append(s.champId)
-                else:
-                    theirTeam.append(s.champId)
-
-            self.signals.result.emit(
-                (Messages.SAVE_LOBBY, (ourTeam, theirTeam, self.myTeamBans, self.theirTeamBans)))
-            self.beenInChampSelect = False
+        if event.data == "GameStart":
             self.signals.result.emit((Messages.GAME_ENTERED,))
-
         elif event.data == "None":
-            if self.beenInChampSelect:
-                ourTeam = []
-                theirTeam = []
-
-                for k, s in self.summoners.items():
-                    if s.champId == 0:
-                        continue
-
-                    if s.ourTeam:
-                        ourTeam.append(s.champId)
-                    else:
-                        theirTeam.append(s.champId)
-
-                self.signals.result.emit(
-                    (Messages.SAVE_LOBBY, (ourTeam, theirTeam, self.myTeamBans, self.theirTeamBans)))
-
-                self.beenInChampSelect = False
+            pass
 
             # self.signals.result.emit((Messages.CHAMPSELECT_QUIT,))
 
-    async def champSelect(self, connection, event):
+    async def fetchSummoner(self, connection, summonerId):
+        summoner = await connection.request('get', '/lol-summoner/v1/summoners/{}'.format(summonerId))
+
+        if summoner.status == 200:
+            json = await summoner.json()
+            return json['displayName'], json['puuid']
+
+    async def championSelectChanged(self, connection, event):
         myTeam = event.data['myTeam']
         theirTeam = event.data['theirTeam']
 
-        print(event.data)
-
-        bans = event.data['bans']
-
-        champId = 0
-
-        # bans': {'myTeamBans': [523, 63], 'numBans': 6, 'theirTeamBans': [82, 147]},
-
         with self.summonersLock:
+            updated = False
+
             if not self.beenInChampSelect:
+                players = {}
+                for player in myTeam + theirTeam:
+                    name = ''
+                    puuid = ''
+
+                    if player['summonerId'] != 0:
+                        name, puuid = await self.fetchSummoner(connection, player['summonerId'])
+
+                    players[player['cellId']] = Player(
+                        name, puuid, player['team'], player['assignedPosition'])
+
+                self.championSelect = ChampionSelect(players)
                 self.beenInChampSelect = True
+                updated = True
 
-            self.myTeamBans = bans['myTeamBans']
-            self.theirTeamBans = bans['theirTeamBans']
+            actions = flat_list = itertools.chain(*event.data['actions'])
+            for action in actions:
+                if action['type'] == 'ban' and action['completed']:
+                    updated = self.championSelect.setPlayerBannedChampion(
+                        action['actorCellId'], action['id'], action['championId'])
 
-            for i, c in enumerate(myTeam):
-                if c['championPickIntent'] == 0:
-                    champId = c['championId']
+            champId = 0
+            for player in myTeam + theirTeam:
+                if player['championPickIntent'] == 0:
+                    champId = player['championId']
                 else:
-                    champId = c['championPickIntent']
+                    champId = player['championPickIntent']
 
-                summonerId = c['summonerId']
+                if champId != 0:
+                    changed = self.championSelect.setPlayerChampion(
+                        player['cellId'], champId)
 
-                if summonerId not in self.summoners:
-                    self.summoners[summonerId] = Summoner(i, True, connection,
-                                                          summonerId, self.signals.result)
+                    if not updated and changed:
+                        updated = True
 
-                else:
-                    if self.summoners[summonerId].champId != champId:
-                        self.summoners[summonerId].setChamp(champId)
-
-            for i, c in enumerate(theirTeam):
-                print(c)
-                if c['championPickIntent'] == 0:
-                    champId = c['championId']
-                else:
-                    champId = c['championPickIntent']
-
-                summonerId = c['cellId']
-
-                if summonerId not in self.summoners:
-                    self.summoners[summonerId] = Summoner(i, False, connection,
-                                                          c['summonerId'], self.signals.result)
-
-                else:
-                    if self.summoners[summonerId].champId != champId:
-                        self.summoners[summonerId].setChamp(champId)
+            if updated:
+                self.signals.result.emit(
+                    (Messages.CHAMPSELECT_UPDATED, self.championSelect))

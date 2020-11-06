@@ -109,7 +109,7 @@
           <property name="minimumSize">
            <size>
             <width>460</width>
-            <height>120</height>
+            <height>140</height>
            </size>
           </property>
           <property name="widgetResizable">
@@ -121,7 +121,7 @@
              <x>0</x>
              <y>0</y>
              <width>719</width>
-             <height>118</height>
+             <height>138</height>
             </rect>
            </property>
            <property name="sizePolicy">
@@ -129,6 +129,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="layoutDirection">
+            <enum>Qt::RightToLeft</enum>
            </property>
            <layout class="QGridLayout" name="gridLayout_4"/>
           </widget>

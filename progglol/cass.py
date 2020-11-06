@@ -1,15 +1,34 @@
 
-import cassiopeia as cass
+import cassiopeia as lolapi
 from dotenv import load_dotenv
 import pathlib
 import os
+
+TIER_SHORT = {
+    lolapi.Tier.iron: 'I',
+    lolapi.Tier.bronze: 'B',
+    lolapi.Tier.silver: 'S',
+    lolapi.Tier.gold: 'G',
+    lolapi.Tier.platinum: 'P',
+    lolapi.Tier.diamond: 'D',
+    lolapi.Tier.master: 'M',
+    lolapi.Tier.grandmaster: 'GM',
+    lolapi.Tier.challenger: 'CH',
+}
+
+DIVISION_SHORT = {
+    lolapi.Division.one: '1',
+    lolapi.Division.two: '2',
+    lolapi.Division.three: '3',
+    lolapi.Division.four: '4',
+}
 
 
 load_dotenv(verbose=True)
 cwd = pathlib.Path(os.getcwd())
 
 # cache champs
-settings = cass.get_default_config()
+settings = lolapi.get_default_config()
 settings['pipeline'] = {
     'Cache': {},
     'SimpleKVDiskStore': {
@@ -22,7 +41,8 @@ settings['pipeline'] = {
     }
 }
 
-cass.apply_settings(settings)
-cass.set_default_region('EUNE')
+lolapi.apply_settings(settings)
+lolapi.set_default_region('EUNE')
 
-champions = cass.get_champions()
+# cache champs
+champions = lolapi.get_champions()

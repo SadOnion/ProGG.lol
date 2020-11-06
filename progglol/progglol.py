@@ -28,41 +28,38 @@ class TeamModel(QAbstractTableModel):
     def __init__(self, parent=None):
         QAbstractTableModel.__init__(self, parent)
         self.parent = parent
-        self.summoners = [None] * 5
+        self.team = []
 
     def rowCount(self, parent):
-        return len(self.summoners)
+        return len(self.team)
 
     def columnCount(self, parent):
         return 5
 
-    def setData(self, i, summoner):
-        self.summoners[i] = summoner
+    def setData(self, team):
+        self.team = team
 
     def data(self, index, role):
-        summoner = self.summoners[index.row()]
+        player = self.team[index.row()]
 
-        if summoner:
-            if role == Qt.DisplayRole:
-                if index.column() == 0:
-                    if summoner.champImage is None:
-                        return QVariant(summoner.champName)
-                elif index.column() == 1:
-                    return QVariant(summoner.name)
-                elif index.column() == 2:
-                    return QVariant(summoner.rank)
-                else:
-                    return QVariant('')
-            elif role == Qt.DecorationRole:
-                if index.column() == 0:
-                    if summoner.champImage is not None:
-                        qim = ImageQt(summoner.champImage)
-                        qim = qim.scaled(self.parent.columnWidth(
-                            index.column()), self.parent.rowHeight(index.row()), Qt.KeepAspectRatio)
-                        pix = QPixmap.fromImage(qim)
-                        return pix
-            elif role == Qt.TextAlignmentRole:
-                return Qt.AlignVCenter + Qt.AlignHCenter
+        if role == Qt.DisplayRole:
+            if index.column() == 1:
+                return QVariant(player.summonerName)
+            elif index.column() == 2:
+                return QVariant(player.getRank())
+            else:
+                return QVariant('')
+        elif role == Qt.DecorationRole:
+            if index.column() == 0:
+                if player.champion:
+                    qim = ImageQt(player.champion.image.image)
+                    qim = qim.scaled(self.parent.columnWidth(
+                        index.column()), self.parent.rowHeight(index.row()), Qt.KeepAspectRatio)
+                    pix = QPixmap.fromImage(qim)
+                    return pix
+
+        elif role == Qt.TextAlignmentRole:
+            return Qt.AlignVCenter + Qt.AlignHCenter
 
     def headerData(self, section, orientation, role):
         header = ['Champion', 'Nick', 'Rank', '', '']
@@ -71,15 +68,54 @@ class TeamModel(QAbstractTableModel):
             return header[section]
 
 
-class LobbyView(QWidget):
+class ChampionSelectView(QWidget):
 
-    def __init__(self, lobby):
+    def __init__(self, championSelect):
         super().__init__()
 
-        self.lobby = lobby
+        self.championSelect = championSelect
 
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Minimum)
-        self.setMinimumWidth(440)
+        team1Size = len(championSelect.getTeam(1))
+        for player in championSelect.getTeam(1):
+            team1Size = max(team1Size, len(player.bannedChampions))
+
+        team2Size = len(championSelect.getTeam(2))
+        for player in championSelect.getTeam(2):
+            team2Size = max(team2Size, len(player.bannedChampions))
+
+        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.setMinimumWidth((team1Size + team2Size + 2) * 40)
+
+        print(self.minimumWidth())
+
+    def paintTeam(self, painter, team, xOffset):
+        pickXOffset = xOffset
+        banXOffset = xOffset
+
+        for player in self.championSelect.getTeam(team):
+            if player.champion:
+                qim = ImageQt(player.champion.image.image)
+                qim = qim.scaled(40, 40, Qt.KeepAspectRatio)
+
+                painter.drawImage(QPoint(qim.width() * pickXOffset, 0), qim)
+
+                pickXOffset += 1
+
+            for champion in player.bannedChampions.values():
+                qim = ImageQt(champion.image.image)
+                qim = qim.scaled(40, 40, Qt.KeepAspectRatio)
+
+                painter.drawImage(
+                    QPoint(qim.width() * banXOffset, qim.height()), qim)
+
+                painter.drawLine(qim.width() * banXOffset, qim.height(),
+                                 qim.width() * (banXOffset + 1), qim.height() * 2)
+                painter.drawLine(qim.width() * (banXOffset + 1), qim.height(),
+                                 qim.width() * banXOffset, qim.height() * 2)
+
+                banXOffset += 1
+
+        return max(pickXOffset, banXOffset)
 
     def paintEvent(self, e):
         painter = QPainter()
@@ -88,57 +124,9 @@ class LobbyView(QWidget):
 
         painter.setPen(QPen(Qt.red, 3))
 
-        i = 0
-
-        for c in self.lobby[0]:
-
-            qim = ImageQt(cass.Champion(id=c).image.image)
-            qim = qim.scaled(40, 40, Qt.KeepAspectRatio)
-
-            painter.drawImage(QPoint(qim.width() * i, 0), qim)
-
-            i += 1
-
-        i = 0
-
-        for c in self.lobby[2]:
-            qim = ImageQt(cass.Champion(id=c).image.image)
-            qim = qim.scaled(40, 40, Qt.KeepAspectRatio)
-            painter.drawImage(
-                QPoint(qim.width() * i, qim.height()), qim)
-
-            painter.drawLine(qim.width() * i, qim.height(),
-                             qim.width() * (i + 1), qim.height() * 2)
-            painter.drawLine(qim.width() * (i + 1), qim.height(),
-                             qim.width() * i, qim.height() * 2)
-
-            i += 1
-
-        theirTeamOffset = max(len(self.lobby[0]), len(self.lobby[1])) + 1
-
-        i = theirTeamOffset
-        for c in self.lobby[1]:
-
-            qim = ImageQt(cass.Champion(id=c).image.image)
-            qim = qim.scaled(40, 40, Qt.KeepAspectRatio)
-
-            painter.drawImage(QPoint(qim.width() * i, 0), qim)
-
-            i += 1
-
-        i = theirTeamOffset
-        for c in self.lobby[3]:
-            qim = ImageQt(cass.Champion(id=c).image.image)
-            qim = qim.scaled(40, 40, Qt.KeepAspectRatio)
-            painter.drawImage(
-                QPoint(qim.width() * i, qim.height()), qim)
-
-            painter.drawLine(qim.width() * i, qim.height(),
-                             qim.width() * (i + 1), qim.height() * 2)
-            painter.drawLine(qim.width() * (i + 1), qim.height(),
-                             qim.width() * i, qim.height() * 2)
-
-            i += 1
+        xOffset = self.paintTeam(painter, 1, 0)
+        xOffset += 1
+        self.paintTeam(painter, 2, xOffset)
 
         painter.end()
 
@@ -169,8 +157,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.lcu.signals.result.connect(self.handle_msg)
         self.threadpool.start(self.lcu)
 
-        self.lobbies = []
-
     def handle_msg(self, msg):
         print(msg)
 
@@ -185,28 +171,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         elif msgType == Messages.CHAMPSELECT_QUIT:
             self.stackedWidget.setCurrentIndex(0)
         elif msgType == Messages.CHAMPSELECT_UPDATED:
-            summ = msg[1]
-            if summ.ourTeam:
-                self.ourTeamTableModel.setData(summ.lobbyPos, summ)
-                self.ourTeamTableModel.layoutChanged.emit()
-            else:
-                self.theirTeamTableModel.setData(summ.lobbyPos, summ)
-                self.theirTeamTableModel.layoutChanged.emit()
-        elif msgType == Messages.SAVE_LOBBY:
-            lobby = msg[1]
+            champSelect = msg[1]
+            self.ourTeamTableModel.setData(champSelect.getTeam(1))
+            self.ourTeamTableModel.layoutChanged.emit()
+
+            self.theirTeamTableModel.setData(champSelect.getTeam(2))
+            self.theirTeamTableModel.layoutChanged.emit()
+        elif msgType == Messages.CHAMPSELECT_SAVE:
+            champSelect = msg[1]
 
             y = self.previousLobbiesGrid.layout().columnCount()
 
             label = QLabel(datetime.datetime.now().strftime('%H:%M:%S'))
             label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
             label.setAlignment(Qt.AlignHCenter)
-            drawingView = LobbyView(lobby)
+            champSelectView = ChampionSelectView(champSelect)
 
             self.previousLobbiesGrid.layout().addWidget(
                 label, 0, y)
-            self.previousLobbiesGrid.layout().addWidget(drawingView, 1, y)
-
-            self.lobbies.insert(0, lobby)
+            self.previousLobbiesGrid.layout().addWidget(champSelectView, 1, y)
 
 
 if __name__ == '__main__':
