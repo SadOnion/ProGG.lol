@@ -145,9 +145,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
 
-        # tmp
-        self.stackedWidget.setCurrentIndex(1)
-
         registry_key = winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE, REG_PATH, 0, winreg.KEY_READ)
         leaguePath, regtype = winreg.QueryValueEx(registry_key, REG_KEY)
@@ -163,8 +160,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.lockSettingsButton.clicked.connect(
             self.toggleSettingsReadOnly)
 
-        self.rockPaperScissorsButton.clicked.connect(
-            self.toggleRockPaperScissorsBot)
+        # self.rockPaperScissorsButton.clicked.connect(
+        # self.toggleRockPaperScissorsBot)
 
         self.ourTeamTableModel = TeamModel(self.ourTeamTable)
         self.ourTeamTable.setModel(self.ourTeamTableModel)
@@ -187,7 +184,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def toggleSettingsReadOnly(self):
-        print('toggling')
         st_mode = os.stat(self.settingsFilePath).st_mode
         os.chmod(self.settingsFilePath, st_mode ^ stat.S_IWRITE)
 
@@ -196,14 +192,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             self.lockSettingsButton.setText('Lock settings')
 
-    @pyqtSlot()
-    def toggleRockPaperScisssorsBot(self):
+    """@pyqtSlot()
+    def toggleRockPaperScissorsBot(self):
         if self.lcu.rockPaperScissorsBot:
             self.lcu.rockPaperScissorsBot = False
             self.rockPaperScissorsButton.setText('Enable')
         else:
             self.lcu.rockPaperScissorsBot = True
-            self.rockPaperScissorsButton.setText('Disable')
+            self.rockPaperScissorsButton.setText('Disable') """
 
     def handle_msg(self, msg):
         print(msg)
