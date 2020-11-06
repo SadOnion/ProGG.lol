@@ -1,6 +1,7 @@
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, QRunnable
 
 import threading
+import asyncio
 
 from lcu_driver import Connector
 from messages import Messages
@@ -21,7 +22,7 @@ class LCU(QRunnable):
 
         self.beenInChampSelect = False
 
-        self.summonersLock = threading.RLock()
+        self.champSelectLock = asyncio.Lock()
 
         # self.rockPaperScissorsBot = False
 
@@ -59,8 +60,7 @@ class LCU(QRunnable):
             self.signals.result.emit(
                 (Messages.GAME_STARTED,))
         elif event.data == "None":
-            pass
-            # self.signals.result.emit((Messages.NONE,))
+            self.signals.result.emit((Messages.NONE,))
 
     async def fetchSummoner(self, connection, summonerId):
         summoner = await connection.request('get', '/lol-summoner/v1/summoners/{}'.format(summonerId))
@@ -73,7 +73,7 @@ class LCU(QRunnable):
         myTeam = event.data['myTeam']
         theirTeam = event.data['theirTeam']
 
-        with self.summonersLock:
+        async with self.champSelectLock:
             updated = False
 
             if not self.beenInChampSelect:

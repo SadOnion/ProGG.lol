@@ -215,13 +215,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         msgType = msg[0]
 
         if msgType == Messages.LCU_CONNECTED:
-            self.stackedWidget.setCurrentIndex(1)
+            self.stackedWidget.setCurrentIndex(2)
         elif msgType == Messages.LCU_DISCONNECTED:
             self.stackedWidget.setCurrentIndex(0)
         elif msgType == Messages.CHAMPSELECT_ENTERED:
             self.stackedWidget.setCurrentIndex(2)
         elif msgType == Messages.NONE:
-            self.stackedWidget.setCurrentIndex(1)
+            self.stackedWidget.setCurrentIndex(2)
         elif msgType == Messages.CHAMPSELECT_UPDATED:
             champSelect = msg[1]
             self.ourTeamTableModel.setData(champSelect.getTeam(1))
