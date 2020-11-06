@@ -23,6 +23,8 @@ class LCU(QRunnable):
 
         self.summonersLock = threading.RLock()
 
+        self.rockPaperScissorsBot = False
+
         self.connector = Connector()
         self.connector.open(self.lcu_ready)
         self.connector.close(self.lcu_close)

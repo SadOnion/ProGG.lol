@@ -6,18 +6,25 @@ from PyQt5.QtCore import *
 
 from PIL.ImageQt import ImageQt
 
+import stat
+import winreg
 import sys
 import lcu_driver
 import os
 import asyncio
 
 import datetime
-from cass import *
 
 
 from lcu import LCU
 
 from messages import Messages
+
+
+REG_PATH = r"SOFTWARE\WOW6432Node\Riot Games, Inc\League of Legends"
+REG_KEY = r"Location"
+
+LOL_CONFIG_SUBPATH = "\\Config\\"
 
 
 qt_creator_file = "mainwindow.ui"
@@ -141,6 +148,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # tmp
         self.stackedWidget.setCurrentIndex(1)
 
+        registry_key = winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE, REG_PATH, 0, winreg.KEY_READ)
+        leaguePath, regtype = winreg.QueryValueEx(registry_key, REG_KEY)
+        winreg.CloseKey(registry_key)
+
+        self.settingsFilePath = leaguePath + '\\Config\\PersistedSettings.json'
+
+        if self.isSettingsReadOnly():
+            self.lockSettingsButton.setText('Unlock settings')
+        else:
+            self.lockSettingsButton.setText('Lock settings')
+
+        self.lockSettingsButton.clicked.connect(
+            self.toggleSettingsReadOnly)
+
+        self.rockPaperScissorsButton.clicked.connect(
+            self.toggleRockPaperScissorsBot)
+
         self.ourTeamTableModel = TeamModel(self.ourTeamTable)
         self.ourTeamTable.setModel(self.ourTeamTableModel)
         self.ourTeamTable.verticalHeader().setVisible(False)
@@ -157,19 +182,42 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.lcu.signals.result.connect(self.handle_msg)
         self.threadpool.start(self.lcu)
 
+    def isSettingsReadOnly(self):
+        return os.stat(self.settingsFilePath).st_mode & stat.S_IWRITE != stat.S_IWRITE
+
+    @pyqtSlot()
+    def toggleSettingsReadOnly(self):
+        print('toggling')
+        st_mode = os.stat(self.settingsFilePath).st_mode
+        os.chmod(self.settingsFilePath, st_mode ^ stat.S_IWRITE)
+
+        if self.isSettingsReadOnly():
+            self.lockSettingsButton.setText('Unlock settings')
+        else:
+            self.lockSettingsButton.setText('Lock settings')
+
+    @pyqtSlot()
+    def toggleRockPaperScisssorsBot(self):
+        if self.lcu.rockPaperScissorsBot:
+            self.lcu.rockPaperScissorsBot = False
+            self.rockPaperScissorsButton.setText('Enable')
+        else:
+            self.lcu.rockPaperScissorsBot = True
+            self.rockPaperScissorsButton.setText('Disable')
+
     def handle_msg(self, msg):
         print(msg)
 
         msgType = msg[0]
 
         if msgType == Messages.LCU_CONNECTED:
-            self.waitingLabel.setText('Waiting for champion select')
-        elif msgType == Messages.LCU_DISCONNECTED:
-            self.waitingLabel.setText('Waiting for league client')
-        elif msgType == Messages.CHAMPSELECT_ENTERED:
             self.stackedWidget.setCurrentIndex(1)
-        elif msgType == Messages.CHAMPSELECT_QUIT:
+        elif msgType == Messages.LCU_DISCONNECTED:
             self.stackedWidget.setCurrentIndex(0)
+        elif msgType == Messages.CHAMPSELECT_ENTERED:
+            self.stackedWidget.setCurrentIndex(2)
+        elif msgType == Messages.CHAMPSELECT_QUIT:
+            self.stackedWidget.setCurrentIndex(1)
         elif msgType == Messages.CHAMPSELECT_UPDATED:
             champSelect = msg[1]
             self.ourTeamTableModel.setData(champSelect.getTeam(1))
