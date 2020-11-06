@@ -1,4 +1,4 @@
-from cass import lolapi, TIER_SHORT, DIVISION_SHORT
+from lolapi import lolapi, TIER_SHORT, DIVISION_SHORT
 
 
 class Player:

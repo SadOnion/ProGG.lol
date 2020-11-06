@@ -18,7 +18,7 @@
     <item row="0" column="0">
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="waitingPage">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -86,7 +86,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Current lobby</string>
+           <string>Current champion select</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -96,7 +96,7 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
           <item>
-           <widget class="QTableView" name="ourTeamTable">
+           <widget class="QTableView" name="ourTeamPickTable">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
               <horstretch>0</horstretch>
@@ -106,7 +106,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QTableView" name="theirTeamTable">
+           <widget class="QTableView" name="theirTeamPickTable">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
               <horstretch>0</horstretch>
@@ -126,7 +126,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Previous lobbies</string>
+           <string>Previous champion selects</string>
           </property>
          </widget>
         </item>
@@ -147,7 +147,7 @@
           <property name="widgetResizable">
            <bool>true</bool>
           </property>
-          <widget class="QWidget" name="previousLobbiesGrid">
+          <widget class="QWidget" name="previousChampionSelectsGrid">
            <property name="geometry">
             <rect>
              <x>0</x>

@@ -15,9 +15,7 @@ import asyncio
 
 import datetime
 
-
 from lcu import LCU
-
 from messages import Messages
 
 
@@ -164,14 +162,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # self.toggleRockPaperScissorsBot)
 
         self.ourTeamTableModel = TeamModel(self.ourTeamTable)
-        self.ourTeamTable.setModel(self.ourTeamTableModel)
-        self.ourTeamTable.verticalHeader().setVisible(False)
-        self.ourTeamTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.ourTeamPickTable.setModel(self.ourTeamTableModel)
+        self.ourTeamPickTable.verticalHeader().setVisible(False)
+        self.ourTeamPickTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.theirTeamTableModel = TeamModel(self.theirTeamTable)
-        self.theirTeamTable.setModel(self.theirTeamTableModel)
-        self.theirTeamTable.verticalHeader().setVisible(False)
-        self.theirTeamTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.theirTeamPickTable.setModel(self.theirTeamTableModel)
+        self.theirTeamPickTable.verticalHeader().setVisible(False)
+        self.theirTeamPickTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.threadpool = QThreadPool()
 
@@ -231,9 +229,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             label.setAlignment(Qt.AlignHCenter)
             champSelectView = ChampionSelectView(champSelect)
 
-            self.previousLobbiesGrid.layout().addWidget(
+            self.previousChampionSelectsGrid.layout().addWidget(
                 label, 0, y)
-            self.previousLobbiesGrid.layout().addWidget(champSelectView, 1, y)
+            self.previousChampionSelectsGrid.layout().addWidget(champSelectView, 1, y)
 
 
 if __name__ == '__main__':
@@ -241,12 +239,3 @@ if __name__ == '__main__':
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
-
-
-""" 
-champions = cass.get_champions()
-
-
-summoner = cass.Summoner(name="rdκ")
-print(summoner)
-"""
