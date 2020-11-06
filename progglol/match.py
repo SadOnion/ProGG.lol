@@ -29,7 +29,7 @@ class Match(QRunnable):
             except:
                 pass
 
-            time.sleep(0.5)
+            time.sleep(1)
 
         self.players = {}
 

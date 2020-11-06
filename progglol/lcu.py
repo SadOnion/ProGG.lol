@@ -59,7 +59,8 @@ class LCU(QRunnable):
             self.signals.result.emit(
                 (Messages.GAME_STARTED,))
         elif event.data == "None":
-            self.signals.result.emit((Messages.NONE,))
+            pass
+            # self.signals.result.emit((Messages.NONE,))
 
     async def fetchSummoner(self, connection, summonerId):
         summoner = await connection.request('get', '/lol-summoner/v1/summoners/{}'.format(summonerId))

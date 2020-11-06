@@ -1,4 +1,5 @@
 from lolapi import lolapi, TIER_SHORT, DIVISION_SHORT
+from analyses.winRatio import WinRatio
 
 
 class Player:
@@ -10,9 +11,12 @@ class Player:
 
         self.champion = None
         self.bannedChampions = {}
+        self.summoner = None
 
         if self.summonerName:
             self.summoner = lolapi.Summoner(name=self.summonerName)
+
+            # self.runAnalysis()
 
     def setChampion(self, champId):
         if champId != 0:
@@ -44,3 +48,7 @@ class Player:
                 TIER_SHORT[soloq.tier], DIVISION_SHORT[soloq.division], TIER_SHORT[flex.tier], DIVISION_SHORT[flex.division])
 
         return ''
+
+    def runAnalysis(self):
+        analysis = WinRatio(self)
+        print(analysis.run())

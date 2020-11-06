@@ -12,6 +12,7 @@ import sys
 import lcu_driver
 import os
 import asyncio
+import pathlib
 
 import datetime
 
@@ -143,12 +144,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
 
+        self.stackedWidget.setCurrentIndex(0)
+
         registry_key = winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE, REG_PATH, 0, winreg.KEY_READ)
         leaguePath, regtype = winreg.QueryValueEx(registry_key, REG_KEY)
         winreg.CloseKey(registry_key)
 
-        self.settingsFilePath = leaguePath + '\\Config\\PersistedSettings.json'
+        self.settingsFilePath = pathlib.Path(
+            leaguePath) / 'config' / 'PersistedSettings.json'
 
         if self.isSettingsReadOnly():
             self.lockSettingsButton.setText('Unlock settings')
