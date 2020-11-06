@@ -9,7 +9,7 @@ from player import Player
 import itertools
 
 
-class WorkerSignals(QObject):
+class LCUSignals(QObject):
     result = pyqtSignal(object)
 
 
@@ -17,13 +17,13 @@ class LCU(QRunnable):
     def __init__(self):
         super(LCU, self).__init__()
 
-        self.signals = WorkerSignals()
+        self.signals = LCUSignals()
 
         self.beenInChampSelect = False
 
         self.summonersLock = threading.RLock()
 
-        self.rockPaperScissorsBot = False
+        # self.rockPaperScissorsBot = False
 
         self.connector = Connector()
         self.connector.open(self.lcu_ready)
@@ -45,7 +45,7 @@ class LCU(QRunnable):
         self.signals.result.emit((Messages.LCU_DISCONNECTED,))
 
     async def gameflowChanged(self, connection, event):
-        print(str(event.data))
+        print(f"gameflow status: {event.data}")
 
         if event.data == "ChampSelect":
             self.signals.result.emit((Messages.CHAMPSELECT_ENTERED,))
@@ -56,11 +56,10 @@ class LCU(QRunnable):
                     (Messages.CHAMPSELECT_SAVE, self.championSelect))
 
         if event.data == "GameStart":
-            self.signals.result.emit((Messages.GAME_ENTERED,))
+            self.signals.result.emit(
+                (Messages.GAME_STARTED,))
         elif event.data == "None":
-            pass
-
-            # self.signals.result.emit((Messages.CHAMPSELECT_QUIT,))
+            self.signals.result.emit((Messages.NONE,))
 
     async def fetchSummoner(self, connection, summonerId):
         summoner = await connection.request('get', '/lol-summoner/v1/summoners/{}'.format(summonerId))
@@ -88,11 +87,16 @@ class LCU(QRunnable):
                     players[player['cellId']] = Player(
                         name, puuid, player['team'], player['assignedPosition'])
 
-                self.championSelect = ChampionSelect(players)
-                self.beenInChampSelect = True
-                updated = True
+                me = await connection.request('get', '/lol-summoner/v1/current-summoner')
+                if me.status == 200:
+                    json = await me.json()
 
-            actions = flat_list = itertools.chain(*event.data['actions'])
+                    self.championSelect = ChampionSelect(
+                        players, json['displayName'])
+                    self.beenInChampSelect = True
+                    updated = True
+
+            actions = itertools.chain(*event.data['actions'])
             for action in actions:
                 if action['type'] == 'ban' and action['completed']:
                     updated = self.championSelect.setPlayerBannedChampion(

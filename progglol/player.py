@@ -40,7 +40,7 @@ class Player:
             ranks = self.summoner.ranks
             soloq = ranks[lolapi.Queue.ranked_solo_fives]
             flex = ranks[lolapi.Queue.ranked_flex_fives]
-            return '{}{}|{}{}'.format(
+            return '{}{} | {}{}'.format(
                 TIER_SHORT[soloq.tier], DIVISION_SHORT[soloq.division], TIER_SHORT[flex.tier], DIVISION_SHORT[flex.division])
 
         return ''

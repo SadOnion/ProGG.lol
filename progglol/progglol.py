@@ -16,6 +16,7 @@ import asyncio
 import datetime
 
 from lcu import LCU
+from match import Match
 from messages import Messages
 
 
@@ -48,23 +49,25 @@ class TeamModel(QAbstractTableModel):
         player = self.team[index.row()]
 
         if role == Qt.DisplayRole:
-            if index.column() == 1:
+            if index.column() == 0:
+                if player.champion:
+                    return QVariant(player.champion.name)
+            elif index.column() == 1:
                 return QVariant(player.summonerName)
             elif index.column() == 2:
                 return QVariant(player.getRank())
             else:
                 return QVariant('')
-        elif role == Qt.DecorationRole:
+        elif role == Qt.TextAlignmentRole:
+            return Qt.AlignVCenter + Qt.AlignHCenter
+        """ elif role == Qt.DecorationRole:
             if index.column() == 0:
                 if player.champion:
                     qim = ImageQt(player.champion.image.image)
                     qim = qim.scaled(self.parent.columnWidth(
                         index.column()), self.parent.rowHeight(index.row()), Qt.KeepAspectRatio)
                     pix = QPixmap.fromImage(qim)
-                    return pix
-
-        elif role == Qt.TextAlignmentRole:
-            return Qt.AlignVCenter + Qt.AlignHCenter
+                    return pix """
 
     def headerData(self, section, orientation, role):
         header = ['Champion', 'Nick', 'Rank', '', '']
@@ -74,7 +77,6 @@ class TeamModel(QAbstractTableModel):
 
 
 class ChampionSelectView(QWidget):
-
     def __init__(self, championSelect):
         super().__init__()
 
@@ -90,8 +92,6 @@ class ChampionSelectView(QWidget):
 
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
         self.setMinimumWidth((team1Size + team2Size + 2) * 40)
-
-        print(self.minimumWidth())
 
     def paintTeam(self, painter, team, xOffset):
         pickXOffset = xOffset
@@ -161,15 +161,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # self.rockPaperScissorsButton.clicked.connect(
         # self.toggleRockPaperScissorsBot)
 
-        self.ourTeamTableModel = TeamModel(self.ourTeamTable)
+        self.ourTeamTableModel = TeamModel()
         self.ourTeamPickTable.setModel(self.ourTeamTableModel)
-        self.ourTeamPickTable.verticalHeader().setVisible(False)
         self.ourTeamPickTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-        self.theirTeamTableModel = TeamModel(self.theirTeamTable)
+        self.theirTeamTableModel = TeamModel()
         self.theirTeamPickTable.setModel(self.theirTeamTableModel)
-        self.theirTeamPickTable.verticalHeader().setVisible(False)
         self.theirTeamPickTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        self.ourTeamGameTable.setModel(self.ourTeamTableModel)
+        self.ourTeamGameTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        self.theirTeamGameTable.setModel(self.theirTeamTableModel)
+        self.theirTeamGameTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.threadpool = QThreadPool()
 
@@ -200,7 +204,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.rockPaperScissorsButton.setText('Disable') """
 
     def handle_msg(self, msg):
-        print(msg)
+        print(f"message: {msg}")
 
         msgType = msg[0]
 
@@ -210,7 +214,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.stackedWidget.setCurrentIndex(0)
         elif msgType == Messages.CHAMPSELECT_ENTERED:
             self.stackedWidget.setCurrentIndex(2)
-        elif msgType == Messages.CHAMPSELECT_QUIT:
+        elif msgType == Messages.NONE:
             self.stackedWidget.setCurrentIndex(1)
         elif msgType == Messages.CHAMPSELECT_UPDATED:
             champSelect = msg[1]
@@ -222,7 +226,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         elif msgType == Messages.CHAMPSELECT_SAVE:
             champSelect = msg[1]
 
-            y = self.previousLobbiesGrid.layout().columnCount()
+            y = self.previousChampionSelectsGrid.layout().columnCount()
 
             label = QLabel(datetime.datetime.now().strftime('%H:%M:%S'))
             label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
@@ -232,6 +236,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.previousChampionSelectsGrid.layout().addWidget(
                 label, 0, y)
             self.previousChampionSelectsGrid.layout().addWidget(champSelectView, 1, y)
+        elif msgType == Messages.GAME_STARTED:
+            self.match = Match()
+            self.match.signals.result.connect(self.handle_msg)
+            self.threadpool.start(self.match)
+
+            self.stackedWidget.setCurrentIndex(3)
+        elif msgType == Messages.GAME_UPDATED:
+            match = msg[1]
+
+            self.ourTeamTableModel.setData(match.getTeam(1))
+            self.ourTeamTableModel.layoutChanged.emit()
+
+            self.theirTeamTableModel.setData(match.getTeam(2))
+            self.theirTeamTableModel.layoutChanged.emit()
 
 
 if __name__ == '__main__':

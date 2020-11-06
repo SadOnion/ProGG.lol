@@ -2,8 +2,13 @@ from player import Player
 
 
 class ChampionSelect:
-    def __init__(self, players):
+    def __init__(self, players, mySummonerName):
         self.players = players
+
+        for player in players.values():
+            if player.summonerName == mySummonerName:
+                self.me = player
+                break
 
     def setPlayerChampion(self, cellId, champId):
         return self.players[cellId].setChampion(champId)
