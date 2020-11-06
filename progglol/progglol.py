@@ -57,6 +57,8 @@ class TeamModel(QAbstractTableModel):
                 return QVariant(player.summonerName)
             elif index.column() == 2:
                 return QVariant(player.getRank())
+            elif index.column() == 3:
+                return QVariant(player.analysis)
             else:
                 return QVariant('')
         elif role == Qt.TextAlignmentRole:
@@ -71,7 +73,7 @@ class TeamModel(QAbstractTableModel):
                     return pix """
 
     def headerData(self, section, orientation, role):
-        header = ['Champion', 'Nick', 'Rank', '', '']
+        header = ['Champion', 'Nick', 'Rank', 'Analysis', '']
 
         if role == Qt.DisplayRole:
             return header[section]

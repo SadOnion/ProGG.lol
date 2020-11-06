@@ -12,11 +12,12 @@ class Player:
         self.champion = None
         self.bannedChampions = {}
         self.summoner = None
+        self.analysis = ''
 
         if self.summonerName:
             self.summoner = lolapi.Summoner(name=self.summonerName)
 
-            # self.runAnalysis()
+            self.runAnalysis()
 
     def setChampion(self, champId):
         if champId != 0:
@@ -42,13 +43,23 @@ class Player:
     def getRank(self):
         if self.summoner:
             ranks = self.summoner.ranks
-            soloq = ranks[lolapi.Queue.ranked_solo_fives]
-            flex = ranks[lolapi.Queue.ranked_flex_fives]
-            return '{}{} | {}{}'.format(
-                TIER_SHORT[soloq.tier], DIVISION_SHORT[soloq.division], TIER_SHORT[flex.tier], DIVISION_SHORT[flex.division])
+
+            soloqStr = 'UN'
+            flexStr = 'UN'
+
+            if lolapi.Queue.ranked_solo_fives in ranks:
+                soloq = ranks[lolapi.Queue.ranked_solo_fives]
+                soloqStr = '{}{}'.format(
+                    TIER_SHORT[soloq.tier], DIVISION_SHORT[soloq.division])
+
+            if lolapi.Queue.ranked_flex_fives in ranks:
+                flex = ranks[lolapi.Queue.ranked_flex_fives]
+                flexStr = '{}{}'.format(
+                    TIER_SHORT[flex.tier], DIVISION_SHORT[flex.division])
+
+            return '{} | {}'.format(soloqStr, flexStr)
 
         return ''
 
     def runAnalysis(self):
-        analysis = WinRatio(self)
-        print(analysis.run())
+        self.analysis = 'wr: {}%'.format(round(WinRatio(self).run() * 100))
