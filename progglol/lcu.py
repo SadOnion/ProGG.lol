@@ -3,6 +3,7 @@ from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject, QRunnable
 import threading
 import asyncio
 
+from lolapi import lolapi
 from lcu_driver import Connector
 from messages import Messages
 from championSelect import ChampionSelect
@@ -40,6 +41,18 @@ class LCU(QRunnable):
         self.connector.start()
 
     async def lcu_ready(self, connection):
+        summoner = await connection.request('get', '/lol-platform-config/v1/namespaces/LoginDataPacket/platformId')
+
+        if summoner.status == 200:
+            region = await summoner.json()
+            if region == 'EUN1':
+                lolapi.set_default_region('EUNE')
+            elif region == 'EUW1':
+                lolapi.set_default_region('EUW')
+            else:
+                print('UNSUPPORTED REGION')
+                return
+
         self.signals.result.emit((Messages.LCU_CONNECTED,))
 
     async def lcu_close(self, _):
