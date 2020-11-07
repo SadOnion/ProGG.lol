@@ -42,6 +42,7 @@ settings['pipeline'] = {
 }
 
 lolapi.apply_settings(settings)
+lolapi.set_default_region('EUNE')
 
 # cache champs
 champions = lolapi.get_champions()
