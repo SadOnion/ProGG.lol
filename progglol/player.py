@@ -37,7 +37,6 @@ class Player:
 
             self.bannedChampions[actionId] = lolapi.Champion(
                 id=bannedChampionId)
-
             self.bannedChampions[actionId].image.image
             return True
 

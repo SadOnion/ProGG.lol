@@ -172,8 +172,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.ourTeamPickTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.theirTeamTableModel = TeamModel()
-        self.theirTeamPickTable.setModel(self.theirTeamTableModel)
-        self.theirTeamPickTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.ourTeamGameTable.setModel(self.ourTeamTableModel)
         self.ourTeamGameTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -222,6 +220,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.stackedWidget.setCurrentIndex(2)
         elif msgType == Messages.NONE:
             self.stackedWidget.setCurrentIndex(2)
+            self.ourTeamTableModel.setData([])
+            self.ourTeamTableModel.layoutChanged.emit()
         elif msgType == Messages.CHAMPSELECT_UPDATED:
             champSelect = msg[1]
             self.ourTeamTableModel.setData(champSelect.getTeam(1))
