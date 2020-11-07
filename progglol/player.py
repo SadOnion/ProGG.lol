@@ -25,6 +25,7 @@ class Player:
                 return False
 
             self.champion = lolapi.Champion(id=champId)
+            self.champion.image.image
             return True
 
         return False
@@ -36,6 +37,8 @@ class Player:
 
             self.bannedChampions[actionId] = lolapi.Champion(
                 id=bannedChampionId)
+
+            self.bannedChampions[actionId].image.image
             return True
 
         return False
