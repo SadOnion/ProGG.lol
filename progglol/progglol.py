@@ -224,10 +224,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.ourTeamTableModel.layoutChanged.emit()
         elif msgType == Messages.CHAMPSELECT_UPDATED:
             champSelect = msg[1]
-            self.ourTeamTableModel.setData(champSelect.getTeam(1))
+
+            self.ourTeamTableModel.setData(champSelect.getOurTeam())
             self.ourTeamTableModel.layoutChanged.emit()
 
-            self.theirTeamTableModel.setData(champSelect.getTeam(2))
+            self.theirTeamTableModel.setData(champSelect.getTheirTeam())
             self.theirTeamTableModel.layoutChanged.emit()
         elif msgType == Messages.CHAMPSELECT_SAVE:
             champSelect = msg[1]

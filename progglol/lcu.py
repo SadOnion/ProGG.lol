@@ -53,7 +53,7 @@ class LCU(QRunnable):
                 print('UNSUPPORTED REGION')
                 return
 
-        self.signals.result.emit((Messages.LCU_CONNECTED,))
+            self.signals.result.emit((Messages.LCU_CONNECTED,))
 
     async def lcu_close(self, _):
         self.signals.result.emit((Messages.LCU_DISCONNECTED,))

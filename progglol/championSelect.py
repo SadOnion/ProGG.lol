@@ -23,3 +23,12 @@ class ChampionSelect:
                 ret.append(player)
 
         return ret
+
+    def getOurTeam(self):
+        return self.getTeam(self.me.team)
+
+    def getTheirTeam(self):
+        if self.me.team == 1:
+            return self.getTeam(2)
+        elif self.me.team == 2:
+            return self.getTeam(1)
