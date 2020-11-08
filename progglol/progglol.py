@@ -148,7 +148,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.stackedWidget.setCurrentIndex(0)
 
-        registry_key = winreg.OpenKey(
+        """ registry_key = winreg.OpenKey(
             winreg.HKEY_LOCAL_MACHINE, REG_PATH, 0, winreg.KEY_READ)
         leaguePath, regtype = winreg.QueryValueEx(registry_key, REG_KEY)
         winreg.CloseKey(registry_key)
@@ -162,7 +162,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.lockSettingsButton.setText('Lock settings')
 
         self.lockSettingsButton.clicked.connect(
-            self.toggleSettingsReadOnly)
+            self.toggleSettingsReadOnly) """
 
         # self.rockPaperScissorsButton.clicked.connect(
         # self.toggleRockPaperScissorsBot)
