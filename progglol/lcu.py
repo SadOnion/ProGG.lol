@@ -55,6 +55,12 @@ class LCU(QRunnable):
 
             self.signals.result.emit((Messages.LCU_CONNECTED,))
 
+            phase = await connection.request('get', '/lol-gameflow/v1/gameflow-phase')
+
+            if phase.status == 200:
+                event = type("", (), dict(data=await phase.json()))()
+                await self.gameflowChanged(connection, event)
+
     async def lcu_close(self, _):
         self.signals.result.emit((Messages.LCU_DISCONNECTED,))
 
@@ -69,7 +75,7 @@ class LCU(QRunnable):
                 self.signals.result.emit(
                     (Messages.CHAMPSELECT_SAVE, self.championSelect))
 
-        if event.data == "GameStart":
+        if event.data == "InProgress":
             self.signals.result.emit(
                 (Messages.GAME_STARTED,))
         elif event.data == "None":
