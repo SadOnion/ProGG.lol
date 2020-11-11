@@ -27,7 +27,6 @@ DIVISION_SHORT = {
 load_dotenv(verbose=True)
 cwd = pathlib.Path(os.getcwd())
 
-# cache champs
 settings = lolapi.get_default_config()
 settings['pipeline'] = {
     'Cache': {},
@@ -36,6 +35,10 @@ settings['pipeline'] = {
         'path': str(cwd / 'cass_tmp')
     },
     'DDragon': {},
+    # 'Kernel': {
+    #     'server_url': os.getenv('KERNEL_SERVER_URL'),
+    #     'port': os.getenv('KERNEL_SERVER_PORT')
+    # },
     'RiotAPI': {
         'api_key': os.getenv('RIOT_API_KEY')
     }

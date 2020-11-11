@@ -6,6 +6,7 @@ from messages import Messages
 from player import Player
 
 import time
+import asyncio
 
 
 class MatchSignals(QObject):
@@ -18,6 +19,8 @@ class Match(QRunnable):
         super(Match, self).__init__()
 
         self.signals = MatchSignals()
+
+        self.loop = asyncio.new_event_loop()
 
     @pyqtSlot()
     def run(self):
@@ -53,6 +56,9 @@ class Match(QRunnable):
 
             self.players[summonerName].champion = lolapi.Champion(
                 name=player['championName'])
+
+            self.loop.run_until_complete(
+                self.players[summonerName].runAnalysis())
 
         self.signals.result.emit((Messages.GAME_UPDATED, self))
 

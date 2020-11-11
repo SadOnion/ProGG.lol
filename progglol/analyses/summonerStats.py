@@ -2,7 +2,7 @@ from analysis import Analysis
 from lolapi import lolapi, TIER_SHORT, DIVISION_SHORT
 
 
-class WinRatio(Analysis):
+class SummonerStats(Analysis):
 
     def soloq(self):
         leagueEntries = self.player.summoner.league_entries

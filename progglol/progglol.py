@@ -59,21 +59,24 @@ class TeamModel(QAbstractTableModel):
                 return QVariant(player.getRank())
             elif index.column() == 3:
                 return QVariant(player.analysis)
+            elif index.column() == 4:
+                return QVariant(player.championAnalysis)
             else:
                 return QVariant('')
         elif role == Qt.TextAlignmentRole:
             return Qt.AlignVCenter + Qt.AlignHCenter
-        """ elif role == Qt.DecorationRole:
-            if index.column() == 0:
-                if player.champion:
-                    qim = ImageQt(player.champion.image.image)
-                    qim = qim.scaled(self.parent.columnWidth(
-                        index.column()), self.parent.rowHeight(index.row()), Qt.KeepAspectRatio)
-                    pix = QPixmap.fromImage(qim)
-                    return pix """
+        # elif role == Qt.DecorationRole:
+        #     if index.column() == 0:
+        #         if player.champion:
+        #             qim = ImageQt(player.champion.image.image)
+        #             qim = qim.scaled(self.parent.columnWidth(
+        #                 index.column()), self.parent.rowHeight(index.row()), Qt.KeepAspectRatio)
+        #             pix = QPixmap.fromImage(qim)
+        #             return pix
 
     def headerData(self, section, orientation, role):
-        header = ['Champion', 'Nick', 'Rank', 'Analysis', '']
+        header = ['Champion', 'Nick', 'Rank',
+                  'Summoner stats', 'Champion stats']
 
         if role == Qt.DisplayRole:
             return header[section]

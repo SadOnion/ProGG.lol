@@ -1,5 +1,7 @@
 from lolapi import lolapi, TIER_SHORT, DIVISION_SHORT
-from analyses.winRatio import WinRatio
+from analyses.summonerStats import SummonerStats
+from analyses.championStats import ChampionStats
+import asyncio
 
 
 class Player:
@@ -13,19 +15,21 @@ class Player:
         self.bannedChampions = {}
         self.summoner = None
         self.analysis = ''
+        self.championAnalysis = ''
 
         if self.summonerName:
             self.summoner = lolapi.Summoner(name=self.summonerName)
 
-            self.runAnalysis()
-
-    def setChampion(self, champId):
+    async def setChampion(self, champId):
         if champId != 0:
             if self.champion and self.champion.id == champId:
                 return False
 
             self.champion = lolapi.Champion(id=champId)
             self.champion.image.image
+
+            await self.runAnalysis()
+
             return True
 
         return False
@@ -63,5 +67,8 @@ class Player:
 
         return ''
 
-    def runAnalysis(self):
-        self.analysis = WinRatio(self).run()
+    async def runAnalysis(self):
+        # self.analysis = '{} {}'.format(
+        #     WinRatio(self).run(), WinRatioChampion(self).run())
+        self.analysis = SummonerStats(self).run()
+        self.championAnalysis = ChampionStats(self).run()

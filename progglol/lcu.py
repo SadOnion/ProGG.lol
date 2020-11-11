@@ -78,7 +78,7 @@ class LCU(QRunnable):
         if event.data == "InProgress":
             self.signals.result.emit(
                 (Messages.GAME_STARTED,))
-        elif event.data == "None":
+        elif event.data == "None" or event.data == "Lobby":
             self.signals.result.emit((Messages.NONE,))
 
     async def fetchSummoner(self, connection, summonerId):
@@ -130,7 +130,7 @@ class LCU(QRunnable):
                     champId = player['championPickIntent']
 
                 if champId != 0:
-                    changed = self.championSelect.setPlayerChampion(
+                    changed = await self.championSelect.setPlayerChampion(
                         player['cellId'], champId)
 
                     if not updated and changed:
