@@ -252,10 +252,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         elif msgType == Messages.GAME_UPDATED:
             match = msg[1]
 
-            self.ourTeamTableModel.setData(match.getTeam(1))
+            self.ourTeamTableModel.setData(match.getOurTeam())
             self.ourTeamTableModel.layoutChanged.emit()
 
-            self.theirTeamTableModel.setData(match.getTeam(2))
+            self.theirTeamTableModel.setData(match.getTheirTeam())
             self.theirTeamTableModel.layoutChanged.emit()
 
 

@@ -31,6 +31,8 @@ class Match(QRunnable):
 
             time.sleep(1)
 
+        myName = request('activeplayername').json()
+
         self.players = {}
 
         for player in playerlist.json():
@@ -41,8 +43,13 @@ class Match(QRunnable):
             else:
                 team = 2
 
-            self.players[summonerName] = Player(
+            p = Player(
                 summonerName, '', team, player['position'])
+
+            if summonerName == myName:
+                self.me = p
+
+            self.players[summonerName] = p
 
             self.players[summonerName].champion = lolapi.Champion(
                 name=player['championName'])
@@ -56,3 +63,12 @@ class Match(QRunnable):
                 ret.append(player)
 
         return ret
+
+    def getOurTeam(self):
+        return self.getTeam(self.me.team)
+
+    def getTheirTeam(self):
+        if self.me.team == 1:
+            return self.getTeam(2)
+        elif self.me.team == 2:
+            return self.getTeam(1)
