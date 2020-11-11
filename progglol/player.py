@@ -64,4 +64,4 @@ class Player:
         return ''
 
     def runAnalysis(self):
-        self.analysis = 'wr: {}%'.format(round(WinRatio(self).run() * 100))
+        self.analysis = WinRatio(self).run()

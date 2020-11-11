@@ -1,15 +1,48 @@
 from analysis import Analysis
+from lolapi import lolapi, TIER_SHORT, DIVISION_SHORT
 
 
 class WinRatio(Analysis):
+
+    def soloq(self):
+        leagueEntries = self.player.summoner.league_entries
+
+        if lolapi.Queue.ranked_solo_fives in leagueEntries:
+            leagueEntry = leagueEntries[lolapi.Queue.ranked_solo_fives]
+            wins = leagueEntry.wins
+            losses = leagueEntry.losses
+            if wins + losses == 0:
+                return ''
+
+            return 'SOLOQ: {}% ({}W {}L)'.format(round(100 * wins / (wins + losses)), wins, losses)
+
+        return ''
+
+    def flexq(self):
+        leagueEntries = self.player.summoner.league_entries
+
+        if lolapi.Queue.ranked_flex_fives in leagueEntries:
+            leagueEntry = leagueEntries[lolapi.Queue.ranked_flex_fives]
+            wins = leagueEntry.wins
+            losses = leagueEntry.losses
+            if wins + losses == 0:
+                return ''
+
+            return 'FLEXQ: {}% ({}W {}L)'.format(round(100 * wins / (wins + losses)), wins, losses)
+
+        return ''
+
     def run(self):
-        winCount = 0
-        loseCount = 0
-        for leagueEntry in self.player.summoner.league_entries:
-            winCount += leagueEntry.wins
-            loseCount += leagueEntry.losses
+        soloq = self.soloq()
+        flexq = self.flexq()
 
-        if winCount + loseCount == 0:
-            return 0
+        if soloq and flexq:
+            return '{} | {}'.format(soloq, flexq)
 
-        return winCount / (winCount + loseCount)
+        if soloq:
+            return soloq
+
+        if flexq:
+            return flexq
+
+        return ''

@@ -169,15 +169,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.ourTeamTableModel = TeamModel()
         self.ourTeamPickTable.setModel(self.ourTeamTableModel)
-        self.ourTeamPickTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        # self.ourTeamPickTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.theirTeamTableModel = TeamModel()
 
         self.ourTeamGameTable.setModel(self.ourTeamTableModel)
-        self.ourTeamGameTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        # self.ourTeamGameTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.theirTeamGameTable.setModel(self.theirTeamTableModel)
-        self.theirTeamGameTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        # self.theirTeamGameTable.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
         self.threadpool = QThreadPool()
 
