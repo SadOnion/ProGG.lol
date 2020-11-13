@@ -41,7 +41,7 @@ class TeamModel(QAbstractTableModel):
         return len(self.team)
 
     def columnCount(self, parent):
-        return 5
+        return 6
 
     def setData(self, team):
         self.team = team
@@ -75,8 +75,8 @@ class TeamModel(QAbstractTableModel):
         #             return pix
 
     def headerData(self, section, orientation, role):
-        header = ['Champion', 'Nick', 'Rank',
-                  'Summoner stats', 'Champion stats']
+        header = ['Champion', 'Summoner', 'Rank',
+                  'Analysis', 'Champion analysis', 'Notes']
 
         if role == Qt.DisplayRole:
             return header[section]
