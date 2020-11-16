@@ -2,3 +2,4 @@
 .vscode
 cass_tmp
 __pycache__
+settings.cfg
