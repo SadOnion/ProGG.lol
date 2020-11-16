@@ -1,4 +1,4 @@
-# ProGG.lol
+# ProGG.lol - WORK IN PROGRESS
 
 ProGG.lol is an application designed to help you in League of Legends. The main features are:
 - champion select analysis - the application looks up your teammates, showing you their rank and their performance on chosen champions.
