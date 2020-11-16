@@ -21,12 +21,6 @@ from messages import Messages
 from settings import Settings
 
 
-REG_PATH = r"SOFTWARE\WOW6432Node\Riot Games, Inc\League of Legends"
-REG_KEY = r"Location"
-
-LOL_CONFIG_SUBPATH = "\\Config\\"
-
-
 qt_creator_file = "mainwindow.ui"
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qt_creator_file)
 
