@@ -11,6 +11,7 @@ Requires Python3.
 
 - clone the repo
 - run: `pip install -r requirements.txt`
+- copy `.env.example` to `.env`
 - set up the `.env` file:
   - `API_MODE=riot`: get a key from https://developer.riotgames.com/ and set `API_RIOT_KEY`
   - `API_MODE=kernel`: set up https://github.com/meraki-analytics/kernel and set `API_KERNEL_URL` and `API_KERNEL_PORT`
