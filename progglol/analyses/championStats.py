@@ -3,7 +3,6 @@ from lolapi import lolapi, TIER_SHORT, DIVISION_SHORT
 
 
 class ChampionStats(Analysis):
-
     def run(self):
         if self.player.champion:
             wins = 0

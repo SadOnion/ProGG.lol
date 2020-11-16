@@ -71,4 +71,4 @@ class Player:
         # self.analysis = '{} {}'.format(
         #     WinRatio(self).run(), WinRatioChampion(self).run())
         self.analysis = SummonerStats(self).run()
-        self.championAnalysis = ChampionStats(self).run()
+        # self.championAnalysis = ChampionStats(self).run()
