@@ -25,27 +25,47 @@ DIVISION_SHORT = {
 
 
 load_dotenv(verbose=True)
-cwd = pathlib.Path(os.getcwd())
+cwd = os.getcwd()
 
 settings = lolapi.get_default_config()
-settings['pipeline'] = {
-    'Cache': {},
-    'SimpleKVDiskStore': {
-        'package': 'cassiopeia_diskstore',
-        'path': str(cwd / 'cass_tmp')
-    },
-    'DDragon': {},
-    # 'Kernel': {
-    #     'server_url': os.getenv('KERNEL_SERVER_URL'),
-    #     'port': os.getenv('KERNEL_SERVER_PORT')
-    # },
-    'RiotAPI': {
-        'api_key': os.getenv('RIOT_API_KEY')
+apiMode = os.getenv('API_MODE')
+
+if apiMode == 'kernel':
+    settings['pipeline'] = {
+        'Cache': {},
+        'SimpleKVDiskStore': {
+            'package': 'cassiopeia_diskstore',
+            'path': cwd + '\\tmp'
+        },
+        'DDragon': {},
+        'Kernel': {
+            'server_url': os.getenv('API_KERNEL_URL'),
+            'port': os.getenv('API_KERNEL_PORT')
+        }
     }
-}
+elif apiMode == 'riot':
+    settings['pipeline'] = {
+        'Cache': {},
+        'SimpleKVDiskStore': {
+            'package': 'cassiopeia_diskstore',
+            'path': cwd + '\\tmp'
+        },
+        'DDragon': {},
+        'RiotAPI': {
+            'api_key': os.getenv('API_RIOT_KEY')
+        }
+    }
+else:
+    exit(1)
 
 lolapi.apply_settings(settings)
-lolapi.set_default_region('EUNE')
+
+region = os.getenv('DEFAULT_REGION')
+
+if region != '':
+    lolapi.set_default_region(region)
+else:
+    lolapi.set_default_region('EUNE')
 
 # cache champs
 champions = lolapi.get_champions()

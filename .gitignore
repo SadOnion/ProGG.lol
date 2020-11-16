@@ -1,5 +1,5 @@
 .env
 .vscode
-cass_tmp
+tmp
 __pycache__
 settings.cfg
