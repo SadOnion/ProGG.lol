@@ -7,7 +7,6 @@ from PyQt5.QtCore import *
 from PIL.ImageQt import ImageQt
 
 import stat
-import winreg
 import sys
 import lcu_driver
 import os
@@ -19,6 +18,7 @@ import datetime
 from lcu import LCU
 from match import Match
 from messages import Messages
+from settings import Settings
 
 
 REG_PATH = r"SOFTWARE\WOW6432Node\Riot Games, Inc\League of Legends"
@@ -149,15 +149,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Ui_MainWindow.__init__(self)
         self.setupUi(self)
 
+        self.settings = Settings()
         self.stackedWidget.setCurrentIndex(0)
 
-        """ registry_key = winreg.OpenKey(
-            winreg.HKEY_LOCAL_MACHINE, REG_PATH, 0, winreg.KEY_READ)
-        leaguePath, regtype = winreg.QueryValueEx(registry_key, REG_KEY)
-        winreg.CloseKey(registry_key)
-
-        self.settingsFilePath = pathlib.Path(
-            leaguePath) / 'config' / 'PersistedSettings.json'
+        if self.settings.getSetting('gamePath') == '':
+            dir_ = QFileDialog.getExistingDirectory(
+                None, 'Select League of Legends game folder', 'C:\\', QFileDialog.ShowDirsOnly)
+            if dir_ == '':
+                exit(1)
+            else:
+                self.settings.setSetting('gamePath', dir_)
+                self.settings.save()
 
         if self.isSettingsReadOnly():
             self.lockSettingsButton.setText('Unlock settings')
@@ -165,7 +167,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.lockSettingsButton.setText('Lock settings')
 
         self.lockSettingsButton.clicked.connect(
-            self.toggleSettingsReadOnly) """
+            self.toggleSettingsReadOnly)
 
         # self.rockPaperScissorsButton.clicked.connect(
         # self.toggleRockPaperScissorsBot)
@@ -185,16 +187,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.threadpool = QThreadPool()
 
         self.lcu = LCU()
-        self.lcu.signals.result.connect(self.handle_msg)
+        self.lcu.signals.result.connect(self.handleMsg)
         self.threadpool.start(self.lcu)
 
     def isSettingsReadOnly(self):
-        return os.stat(self.settingsFilePath).st_mode & stat.S_IWRITE != stat.S_IWRITE
+        filePath = self.settings.getSetting(
+            'gamePath') + '\\Config\\PersistedSettings.json'
+        return os.stat(filePath).st_mode & stat.S_IWRITE != stat.S_IWRITE
 
     @pyqtSlot()
     def toggleSettingsReadOnly(self):
-        st_mode = os.stat(self.settingsFilePath).st_mode
-        os.chmod(self.settingsFilePath, st_mode ^ stat.S_IWRITE)
+        filePath = self.settings.getSetting(
+            'gamePath') + '\\Config\\PersistedSettings.json'
+        st_mode = os.stat(filePath).st_mode
+        os.chmod(filePath, st_mode ^ stat.S_IWRITE)
 
         if self.isSettingsReadOnly():
             self.lockSettingsButton.setText('Unlock settings')
@@ -210,19 +216,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.lcu.rockPaperScissorsBot = True
             self.rockPaperScissorsButton.setText('Disable') """
 
-    def handle_msg(self, msg):
+    def closeEvent(self, event):
+        self.settings.save()
+        event.accept()
+
+    def handleMsg(self, msg):
         print(f"message: {msg}")
 
         msgType = msg[0]
 
         if msgType == Messages.LCU_CONNECTED:
-            self.stackedWidget.setCurrentIndex(2)
+            self.stackedWidget.setCurrentIndex(1)
         elif msgType == Messages.LCU_DISCONNECTED:
             self.stackedWidget.setCurrentIndex(0)
         elif msgType == Messages.CHAMPSELECT_ENTERED:
             self.stackedWidget.setCurrentIndex(2)
         elif msgType == Messages.NONE:
-            self.stackedWidget.setCurrentIndex(2)
+            self.stackedWidget.setCurrentIndex(1)
             self.ourTeamTableModel.setData([])
             self.ourTeamTableModel.layoutChanged.emit()
         elif msgType == Messages.CHAMPSELECT_UPDATED:
@@ -248,7 +258,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.previousChampionSelectsGrid.layout().addWidget(champSelectView, 1, y)
         elif msgType == Messages.GAME_STARTED:
             self.match = Match()
-            self.match.signals.result.connect(self.handle_msg)
+            self.match.signals.result.connect(self.handleMsg)
             self.threadpool.start(self.match)
 
             self.stackedWidget.setCurrentIndex(3)
